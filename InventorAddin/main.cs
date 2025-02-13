@@ -1,64 +1,62 @@
-﻿using Inventor;
-
-using System;
-using System.IO;
+﻿using System;
 using System.Drawing;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Windows.Forms;
-
-using InventorAddin.Properties;
 using System.Globalization;
 
+using Inventor;
+using InventorAddin.Properties;
+
+
 namespace InventorAddin {
-    [Guid("12345678-ABCD-1234-ABCD-123456789ABC")]
+    [Guid("80960a53-04de-42b0-ab12-ba9059b555a1")]
 
     public class InventorAddin : ApplicationAddInServer {
         private Inventor.Application _inventorApp;
         private ButtonDefinition _button;
-        private RibbonPanel _panel; // ссылка на панель для возможного удаления
+        private RibbonPanel _panel;
 
         public void Activate(ApplicationAddInSite addInSiteObject, bool firstTime) {
-            _inventorApp = addInSiteObject.Application;
-
-            //System.Drawing.Bitmap smallIconBmp = new System.Drawing.Bitmap("C:\\InventorAddin.Small.bmp");
-            //System.Drawing.Bitmap largeIconBmp = new System.Drawing.Bitmap("C:\\InventorAddin.Large.bmp");
-
-            //object smallIconDisp = AxHostConverter.ImageToPictureDisp(smallIconBmp);
-            //object largeIconDisp = AxHostConverter.ImageToPictureDisp(largeIconBmp);
-
-            // Создаём кнопку
-            CommandManager cmdMgr = _inventorApp.CommandManager;
-            ControlDefinitions ctrlDefs = cmdMgr.ControlDefinitions;
-            _button = ctrlDefs.AddButtonDefinition(
-                "Save in DXF",          // Текст на кнопке
-                "MyInventorButton",        // Уникальный идентификатор
-                CommandTypesEnum.kNonShapeEditCmdType,
-                "{12345678-ABCD-1234-ABCD-123456789ABC}", // ID аддона
-                "Save SheetMetal DXF", // Описание
-                "Save SheetMetal DXF"
-                //smallIconDisp,
-                //largeIconDisp
-            );
-
-            _button.OnExecute += ButtonClickHandler;
-
-            // Получаем интерфейс пользователя и вкладку "Инструменты" в режиме детали (Part)
-            UserInterfaceManager uiMgr = _inventorApp.UserInterfaceManager;
-            Ribbon ribbon = uiMgr.Ribbons["Assembly"];
-            RibbonTab toolsTab = ribbon.RibbonTabs["id_TabTools"];
-
-            // Пытаемся получить существующую панель "Пользовательские команды"
             try {
-                _panel = toolsTab.RibbonPanels["id_PanelUserCommands"];
-            }
-            catch {
-                // Если такой панели нет, создаём новую
-                _panel = toolsTab.RibbonPanels.Add("Пользовательские команды", "MyCommandsPanel", "{12345678-ABCD-1234-ABCD-123456789ABC}", "", true);
-            }
+                _inventorApp = addInSiteObject.Application;
+                
+                Inventor.IPictureDisp smallIcon = PictureDispConverter.GetIPictureDispFromImage(Resources.small_ico);
+                Inventor.IPictureDisp largeIcon = PictureDispConverter.GetIPictureDispFromImage(Resources.large_ico);
 
-            // Добавляем кнопку в выбранную панель
-            _panel.CommandControls.AddButton(_button, false);
+
+                // Создаём кнопку
+                CommandManager cmdMgr = _inventorApp.CommandManager;
+                ControlDefinitions ctrlDefs = cmdMgr.ControlDefinitions;
+                _button = ctrlDefs.AddButtonDefinition(
+                    "SheetMetal to DXF",          // Текст на кнопке
+                    "ExportSheetMetalDXF",        // Уникальный идентификатор
+                    CommandTypesEnum.kNonShapeEditCmdType,
+                    "{80960a53-04de-42b0-ab12-ba9059b555a1}", // ID аддона
+                    "Export all sheet metal parts to DXF", // Описание
+                    "Export sheet metal as DXF",
+                    smallIcon, largeIcon
+                );
+
+                _button.OnExecute += ButtonClickHandler;
+
+                // Получаем интерфейс пользователя и вкладку "Инструменты" в режиме сборки (Assembly)
+                UserInterfaceManager uiMgr = _inventorApp.UserInterfaceManager;
+                Ribbon ribbon = uiMgr.Ribbons["Assembly"];
+                RibbonTab toolsTab = ribbon.RibbonTabs["id_TabTools"];
+
+                // Пытаемся получить существующую панель "Пользовательские команды"
+                try {
+                    _panel = toolsTab.RibbonPanels["id_PanelUserCommands"];
+                } catch {
+                    // Если такой панели нет, создаём новую
+                    _panel = toolsTab.RibbonPanels.Add("Пользовательские команды", "MyCommandsPanel", "{12345678-ABCD-1234-ABCD-123456789ABC}", "", true);
+                }
+
+                // Добавляем кнопку в выбранную панель
+                _panel.CommandControls.AddButton(_button, false);
+            } catch (Exception ex) {
+                MessageBox.Show("Ошибка при активации аддона: " + ex.Message);
+            }
         }
 
         public void Deactivate() {
@@ -67,7 +65,8 @@ namespace InventorAddin {
                 try {
                     // Если панель была создана нами, можно её также удалить,
                     // но будьте осторожны – удаление панели может повлиять на UI.
-                    _panel.CommandControls["MyInventorButton"].Delete();
+                    _button.OnExecute -= ButtonClickHandler;
+                    _panel.CommandControls["ExportSheetMetalDXF"].Delete();
                 }
                 catch { }
             }
@@ -102,9 +101,6 @@ namespace InventorAddin {
                     componentCounts[componentName] = 1;
                 }
             }
-
-            // Перебираем все компоненты сборки
-            HashSet<string> uniqueComponentNames = new HashSet<string>(); // Хранит уникальные названия компонентов
 
             foreach (var entry in componentCounts) {
                 string componentName = entry.Key;
@@ -169,5 +165,12 @@ namespace InventorAddin {
         }
 
         public dynamic Automation => throw new NotImplementedException();
+
+        public class PictureDispConverter : AxHost {
+            private PictureDispConverter() : base(string.Empty) { }
+            public static Inventor.IPictureDisp GetIPictureDispFromImage(System.Drawing.Icon icon) {
+                return (Inventor.IPictureDisp)GetIPictureDispFromPicture(icon.ToBitmap());
+            }
+        }
     }
 }

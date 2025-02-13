@@ -29,13 +29,16 @@
 
   <ItemGroup>
     <PackageReference Include="stdole" Version="17.12.40391" />
-    <PackageReference Include="System.Drawing.Common" Version="9.0.1" />
+    <PackageReference Include="System.Drawing.Common" Version="9.0.2" />
     <PackageReference Include="System.Resources.Extensions" Version="9.0.1" />
   </ItemGroup>
 
   <ItemGroup>
     <Reference Include="System.Drawing">
       <HintPath>..\..\..\..\..\..\Program Files\Microsoft Visual Studio\2022\Community\dotnet\net8.0\runtime\shared\Microsoft.WindowsDesktop.App\8.0.12\System.Drawing.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Drawing.Common">
+      <HintPath>..\..\..\..\..\..\Program Files\Microsoft Visual Studio\2022\Community\dotnet\net8.0\runtime\shared\Microsoft.WindowsDesktop.App\8.0.12\System.Drawing.Common.dll</HintPath>
     </Reference>
     <Reference Include="System.Windows.Forms">
       <HintPath>..\..\..\..\..\..\Program Files\Microsoft Visual Studio\2022\Community\dotnet\net8.0\runtime\shared\Microsoft.WindowsDesktop.App\8.0.12\System.Windows.Forms.dll</HintPath>
@@ -52,7 +55,7 @@
 
   <ItemGroup>
     <EmbeddedResource Update="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
+      <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
